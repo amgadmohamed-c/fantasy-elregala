@@ -1,92 +1,257 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e3fa8">
 <title>MSA Fantasy Football</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#f6f7f9;--card:#fff;--tx:#1a1d23;--mu:#6b7280;--ac:#1f6f43;--bd:#d9dde3;--bad:#b42318;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2128;--tx:#eceef2;--mu:#98a0ad;--ac:#3fb978;--bd:#323843;--bad:#f97066}}
-*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
-body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
-header{padding:16px 16px 4px}h1{margin:0;font-size:20px}
-nav{display:flex;gap:6px;padding:8px 16px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:2;overflow-x:auto}nav button{flex:1;white-space:nowrap}
-main{padding:8px 16px 32px;max-width:900px;margin:auto}
-button,select,input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
-button{cursor:pointer}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}button:disabled{opacity:.5}
-.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}.scroll{overflow-x:auto}
-table{border-collapse:collapse;width:100%}th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-size:13px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}.grid label,.f label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:3px}
-.grid select,.grid input,.f input,.f select{width:100%}.f{display:grid;gap:10px;margin-top:10px}
-.mu{color:var(--mu);font-size:13px}.ok{color:var(--ac);font-weight:600}.bad{color:var(--bad);font-weight:600}
-.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
-#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:9;max-width:90%}
+/* Palette: painted five-a-side court. Court blue, bib yellow, turf green, chalk. */
+:root{
+  --bg:#eef1f6;--card:#ffffff;--ink:#0f1a3a;--mu:#5d6785;--line:#d6dcea;
+  --court:#1e3fa8;--court-2:#16307f;--bib:#ffd23f;--bib-ink:#2a2200;
+  --turf:#17794b;--turf-2:#0f5c37;--ok:#157a47;--bad:#c4321f;--tint:#e6ecfb;
+  --r-lg:20px;--r-md:14px;--r-sm:10px;
+  --shadow:0 1px 2px rgba(15,26,58,.06),0 8px 24px -12px rgba(15,26,58,.18);
+  --display:"Bricolage Grotesque","Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  --body:"Hanken Grotesk",system-ui,-apple-system,"Segoe UI",Arial,sans-serif;
+  box-sizing:border-box;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0b1126;--card:#131b36;--ink:#e8ecf8;--mu:#97a1c0;--line:#27315a;
+  --court:#7f9cff;--court-2:#5f7ff0;--tint:#1a2550;--ok:#4cc38a;--bad:#ff7b66;--shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.6)}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{scroll-padding-top:env(safe-area-inset-top,0px);scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--body);-webkit-font-smoothing:antialiased;min-height:100vh}
+h1,h2,h3{font-family:var(--display);margin:0;line-height:1.05;letter-spacing:-.02em}
+b,strong{font-weight:700}
+a{color:var(--court)}
+:focus-visible{outline:3px solid var(--bib);outline-offset:2px;border-radius:8px}
 
-.pitch-wrap{margin:10px 0 14px}
-.pitch{position:relative;display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:10px;align-items:stretch;background:linear-gradient(180deg,#127a4c,#0d5d3a 60%,#0b4a2e);border:2px solid rgba(255,255,255,.2);border-radius:18px;padding:16px;min-height:360px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
-.pitch::before,.pitch::after{content:"";position:absolute;inset:14px;border:2px solid rgba(255,255,255,.3);border-radius:16px;pointer-events:none}
-.pitch::after{inset:14px 50% 14px 50%;width:0;border-left:2px solid rgba(255,255,255,.3);border-right:0;border-top:0;border-bottom:0}
-.pitch-lines{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at center,transparent 0 56%,rgba(255,255,255,.18) 56% 57%,transparent 58%);opacity:.8}
-.slot{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-height:82px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(14,33,22,.2);color:#fff;padding:10px 8px;backdrop-filter:blur(2px);text-align:center;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
-.slot:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.18)}
-.slot.filled{background:rgba(245,250,255,.12);border-color:rgba(255,255,255,.4)}
-.slot-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.8);font-weight:700}
-.slot-name{font-size:15px;font-weight:700;line-height:1.2;max-width:100%}
-.slot-meta{font-size:11px;color:rgba(255,255,255,.8)}
-.slot-empty{font-size:13px;color:rgba(255,255,255,.8)}
-.captain-badge{position:absolute;top:8px;right:8px;border-radius:50%;background:#f6c453;color:#1d1d1d;width:20px;height:20px;display:grid;place-items:center;font-size:11px;font-weight:800}
-.caption-row{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:8px}
-.captain-picker{min-width:180px}
-.mini-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px}
-.mini-summary .row{border:1px solid var(--bd);border-radius:10px;padding:8px 10px;background:rgba(0,0,0,.02)}
-.player-bank-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
-.player-bank-section{display:flex;flex-direction:column;gap:8px}
-.bank-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);font-weight:700;padding-left:2px}
-.player-bank{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
-.player-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;min-height:76px;text-align:left;transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease}
-.player-card:hover{border-color:var(--ac);transform:translateY(-1px)}
-.player-card.selected{border-color:var(--ac);background:rgba(31,111,67,.08)}
-.player-name{font-weight:700;line-height:1.2}
-.player-meta{font-size:12px;color:var(--mu)}
-.player-badge{margin-top:auto;font-size:11px;padding:4px 7px;border-radius:999px;background:rgba(31,111,67,.12);color:var(--ac);font-weight:700}
-.empty-bank{font-size:12px;color:var(--mu);padding:10px;border:1px dashed var(--bd);border-radius:10px}
-@media (max-width:620px){.pitch{grid-template-columns:1fr;min-height:auto}.pitch::after{inset:50% 14px 14px 14px;border-top:2px solid rgba(255,255,255,.3);border-left:0;border-right:0;border-bottom:0}.pitch::before{inset:14px}} 
+/* controls */
+button,select,input{font:inherit;color:var(--ink)}
+input,select{width:100%;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r-sm);padding:12px 14px;min-height:46px;transition:border-color .15s,box-shadow .15s}
+input::placeholder{font-weight:500;color:var(--mu);opacity:.7}
+input:focus,select:focus{outline:none;border-color:var(--court);box-shadow:0 0 0 4px color-mix(in srgb,var(--court) 20%,transparent)}
+input[type=checkbox]{width:22px;height:22px;min-height:0;accent-color:var(--court)}
+button{cursor:pointer;border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:11px 20px;min-height:46px;font-weight:700;transition:transform .12s,background .15s,border-color .15s,opacity .15s}
+button:active:not(:disabled){transform:scale(.97)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.on,.btn-primary{background:var(--court);border-color:var(--court);color:#fff}
+@media (prefers-color-scheme:dark){button.on,.btn-primary{color:#0b1126}}
+button.bib{background:var(--bib);border-color:var(--bib);color:var(--bib-ink)}
+button.ghost{background:transparent;border-color:transparent;color:var(--mu);padding:8px 12px;min-height:40px}
+button.small{min-height:38px;padding:7px 14px;font-size:14px}
+button.full{width:100%}
+label{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--mu)}
+label small{font-weight:500;color:var(--mu)}
+.f{display:grid;gap:14px;margin-top:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.mu{color:var(--mu);font-size:14px}.ok{color:var(--ok);font-weight:700}.bad{color:var(--bad);font-weight:700}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:18px;margin:14px 0;box-shadow:var(--shadow)}
+.card h2{font-size:22px;margin-bottom:4px}
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}
+th,td{padding:11px 8px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+th{color:var(--mu);font-size:13px;font-weight:600}
+tr:last-child td{border-bottom:0}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;font-size:13px;font-weight:700;background:var(--tint);color:var(--court)}
+.chip.open{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.chip.locked{background:color-mix(in srgb,var(--bad) 14%,transparent);color:var(--bad)}
+
+/* shell */
+#progress{position:fixed;inset:0 0 auto 0;height:3px;z-index:30;background:var(--bib);transform:scaleX(0);transform-origin:left;opacity:0;pointer-events:none}
+body[data-busy] #progress{opacity:1;animation:prog 1.2s ease-in-out infinite}
+body[data-busy] button,body[data-busy] .league{pointer-events:none;opacity:.7}
+@keyframes prog{0%{transform:scaleX(0)}60%{transform:scaleX(.8)}100%{transform:scaleX(1);opacity:0}}
+.topbar{background:var(--court);color:#fff;padding:calc(18px + env(safe-area-inset-top,0px)) 20px 22px;border-radius:0 0 28px 28px}
+@media (prefers-color-scheme:dark){.topbar{background:#16214a}}
+.topbar-in{max-width:900px;margin:auto;display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.topbar h1{font-size:30px;color:#fff;overflow-wrap:anywhere}
+.topbar .sub{opacity:.85;font-size:14px;margin-top:6px}
+.topbar button.ghost{color:#fff;border:1.5px solid rgba(255,255,255,.4);min-height:38px;padding:6px 14px;font-size:14px;flex:none}
+main{padding:6px 16px calc(120px + env(safe-area-inset-bottom,0px));max-width:900px;margin:auto}
+nav{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;gap:4px;padding:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 12px 32px -10px rgba(15,26,58,.35);max-width:calc(100% - 24px);overflow-x:auto}
+nav:empty{display:none}
+nav button{border:0;background:transparent;color:var(--mu);padding:10px 14px;font-size:15px;min-height:44px;white-space:nowrap}
+nav button.on{background:var(--court);color:#fff}
+@media (prefers-color-scheme:dark){nav button.on{color:#0b1126}}
+.view-enter{animation:viewIn .22s ease-out}
+@keyframes viewIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+#toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:12px 18px;border-radius:14px;z-index:40;max-width:90%;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.err{background:var(--bad);color:#fff}
+
+/* auth screens */
+.auth{max-width:460px;margin:auto;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(32px + env(safe-area-inset-bottom,0px))}
+.court{position:relative;border-radius:var(--r-lg);overflow:hidden;background:var(--court);aspect-ratio:4/3;box-shadow:var(--shadow)}
+@media (prefers-color-scheme:dark){.court{background:#16214a}}
+.court svg{position:absolute;inset:0;width:100%;height:100%}
+.court .chalk{fill:none;stroke:rgba(255,255,255,.85);stroke-width:1.6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s .1s ease-out forwards}
+.court .dot{fill:var(--bib)}
+@keyframes draw{to{stroke-dashoffset:0}}
+.court-title{position:absolute;left:20px;top:18px;right:20px;color:#fff}
+.court-title h1{font-size:clamp(30px,9vw,44px);color:#fff}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);padding:22px;margin-top:14px;box-shadow:var(--shadow)}
+.panel h2{font-size:26px}
+.lede{margin:8px 0 0;color:var(--mu)}
+.hint{font-size:13px;color:var(--mu);font-weight:500}
+
+/* league picker */
+.leagues{display:grid;gap:10px;margin-top:16px}
+.league{display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;width:100%;border-radius:var(--r-md);padding:16px;border:1.5px solid var(--line);background:var(--card);min-height:72px}
+.league:hover{border-color:var(--court);background:var(--tint)}
+.league .nm{font-family:var(--display);font-weight:800;font-size:19px;line-height:1.15;overflow-wrap:anywhere}
+.league .meta{font-size:13px;color:var(--mu);font-weight:500;margin-top:3px}
+.league .go{flex:none;background:var(--bib);color:var(--bib-ink);border-radius:999px;padding:8px 16px;font-weight:700;font-size:14px}
+.skel{height:72px;border-radius:var(--r-md);background:linear-gradient(90deg,var(--tint),var(--line),var(--tint));background-size:200% 100%;animation:sh 1.2s linear infinite}
+@keyframes sh{to{background-position:-200% 0}}
+.empty{padding:18px;border:1.5px dashed var(--line);border-radius:var(--r-md);color:var(--mu);text-align:center}
+details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:6px}
+details.more summary{cursor:pointer;font-weight:700;padding:12px 0;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.more summary::-webkit-details-marker{display:none}
+details.more summary::after{content:"+";font-size:22px;color:var(--court);transition:transform .2s}
+details.more[open] summary::after{transform:rotate(45deg)}
+
+/* budget meter */
+.meter{height:12px;border-radius:999px;background:var(--tint);overflow:hidden}
+.meter i{display:block;height:100%;border-radius:999px;background:var(--court);transition:width .35s cubic-bezier(.3,.8,.3,1),background .2s}
+.meter.over i{background:var(--bad)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-top:14px}
+.stat{border:1px solid var(--line);border-radius:var(--r-md);padding:10px 12px}
+.stat span{display:block;font-size:13px;color:var(--mu)}
+.stat b{font-family:var(--display);font-size:20px}
+
+/* pitch */
+.pitch{position:relative;max-width:460px;margin:16px auto;aspect-ratio:3/4;border-radius:var(--r-lg);overflow:hidden;
+  background:repeating-linear-gradient(180deg,var(--turf) 0 12.5%,var(--turf-2) 12.5% 25%);box-shadow:inset 0 0 0 4px rgba(255,255,255,.12)}
+.pitch svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.pitch svg *{fill:none;stroke:rgba(255,255,255,.55);stroke-width:.7}
+.formation{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:6% 6% 5%}
+.line{display:flex;justify-content:space-evenly;align-items:center}
+.slot{--sh:clamp(44px,13vw,58px);position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;background:transparent;border:0;padding:0;min-height:0;color:#fff;border-radius:14px;width:30%}
+.slot .shirt{width:var(--sh);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:16px;
+  border:2.5px dashed rgba(255,255,255,.7);color:rgba(255,255,255,.9);background:rgba(255,255,255,.08);transition:transform .2s cubic-bezier(.3,1.4,.5,1),background .2s}
+.slot:hover .shirt{transform:scale(1.06)}
+.slot.filled .shirt{background:var(--bib);border:2.5px solid #fff;color:var(--bib-ink);box-shadow:0 6px 14px rgba(0,0,0,.3);animation:pop .28s cubic-bezier(.3,1.5,.5,1)}
+@keyframes pop{from{transform:scale(.6)}to{transform:scale(1)}}
+.slot .tag{font-size:12px;font-weight:700;line-height:1.15;padding:4px 10px;border-radius:999px;background:rgba(7,32,19,.62);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .price{font-size:11px;opacity:.9;font-weight:700;line-height:1}
+.cap{position:absolute;top:-4px;right:calc(50% - var(--sh)/2 - 8px);width:22px;height:22px;border-radius:50%;background:#fff;color:var(--court-2);display:grid;place-items:center;font-size:12px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+
+/* player pool */
+.pool{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px}
+.pool h3{font-size:17px;margin-bottom:10px}
+.pcards{display:grid;gap:8px}
+.pc{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;width:100%;border-radius:var(--r-md);padding:12px 14px;min-height:56px}
+.pc:hover{border-color:var(--court)}
+.pc.selected{background:var(--tint);border-color:var(--court)}
+.pc .nm{font-weight:700;overflow-wrap:anywhere}
+.pc .pr{font-family:var(--display);font-weight:800;font-size:17px;flex:none}
+.pc .st{font-size:12px;font-weight:700;color:var(--court)}
+.empty-bank{font-size:13px;color:var(--mu);padding:12px;border:1.5px dashed var(--line);border-radius:var(--r-md)}
+
+/* leaderboard */
+.code{display:inline-block;font-family:var(--display);font-weight:800;font-size:30px;letter-spacing:.14em;padding:8px 16px;border:2px dashed var(--court);border-radius:14px;color:var(--court);margin:12px 0 4px}
+.rank{display:grid;grid-template-columns:44px 1fr auto;gap:12px;align-items:center;padding:14px 4px;border-bottom:1px solid var(--line)}
+.rank:last-child{border-bottom:0}
+.rank .n{font-family:var(--display);font-weight:800;font-size:22px;text-align:center;width:40px;height:40px;line-height:40px;border-radius:50%;background:var(--tint);color:var(--court)}
+.rank.first .n{background:var(--bib);color:var(--bib-ink)}
+.rank .who{min-width:0}
+.rank .who b{font-size:17px}
+.rank .picks{font-size:13px;color:var(--mu);overflow-wrap:anywhere}
+.rank .tot{font-family:var(--display);font-weight:800;font-size:28px;text-align:right;line-height:1}
+.rank .brk{font-size:12px;color:var(--mu);text-align:right;margin-top:4px}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}.court .chalk{stroke-dashoffset:0}}
 </style></head><body>
-<header><h1 id="ttl">MSA Fantasy Football</h1><div class="mu" id="sub">5-player squads · budget 50</div></header>
-<nav id="nav"></nav><main id="v"></main><div id="toast"></div>
+<div id="progress"></div>
+<div id="app"></div><nav id="nav" aria-label="Sections"></nav><div id="toast" role="status" aria-live="polite"></div>
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const LS="msa_session";
-let ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false};
+const LS="msa_session",LN="msa_name";
+let JC=(new URLSearchParams(location.search).get("join")||"").toUpperCase();
+let ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false,screen:"signin",leagues:null,loadErr:""};
+const A={name:"",pin:""};
 try{ST.sess=JSON.parse(localStorage.getItem(LS))}catch(e){}
-function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display="none",2800)}
+try{A.name=localStorage.getItem(LN)||""}catch(e){}
+
+function toast(m,kind){const t=$("#toast");t.textContent=m;t.className="show"+(kind==="err"?" err":"");clearTimeout(toast.t);toast.t=setTimeout(()=>t.className="",kind==="err"?4200:2400)}
 async function api(action,body={}){
   const r=await fetch("/api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...(ST.sess||{}),...body})});
   const j=await r.json().catch(()=>({}));
-  if(!r.ok){if(r.status===401&&ST.sess)logout(true);throw new Error(j.error||"Something went wrong")}
+  if(!r.ok){if(r.status===401&&ST.sess)logout(true);throw new Error(j.error||"Something went wrong. Try again.")}
   return j}
-async function run(fn){if(ST.busy)return;ST.busy=true;try{await fn()}catch(e){toast(e.message)}finally{ST.busy=false}}
-function logout(silent){localStorage.removeItem(LS);ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false};if(!silent||true)render()}
+async function run(fn){if(ST.busy)return;ST.busy=true;document.body.dataset.busy="1";try{await fn()}catch(e){toast(e.message,"err")}finally{ST.busy=false;delete document.body.dataset.busy}}
+function logout(silent){try{localStorage.removeItem(LS)}catch(e){}ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false,screen:"signin",leagues:null,loadErr:""};A.pin="";render()}
 async function load(resetDraft=true){
-  ST.d=await api("state");const d=ST.d;
+  ST.d=await api("state");ST.loadErr="";const d=ST.d;
   if(resetDraft||!ST.draft)ST.draft=Object.assign({gk:"",def:"",m1:"",m2:"",fwd:"",cap:""},d.mine||{});
   render()}
-function saveSession(j){ST.sess={token:j.token,code:j.code};localStorage.setItem(LS,JSON.stringify(ST.sess));history.replaceState(null,"",location.pathname)}
+function saveSession(j){ST.sess={token:j.token,code:j.code};localStorage.setItem(LS,JSON.stringify(ST.sess));history.replaceState(null,"",location.pathname);A.pin="";JC=""}
 
-/* ---------- welcome ---------- */
-function welcome(){
-  const jc=new URLSearchParams(location.search).get("join")||"";
-  return `<div class="card"><b>${jc?"Join a league":"Welcome"}</b><div class="f" style="max-width:360px">
-   <label>League code<input id="jc" value="${esc(jc)}" placeholder="e.g. K7M2QX" autocapitalize="characters"></label>
-   <label>Your name<input id="jn" placeholder="Your name" maxlength="40"></label>
-   <label>PIN (4-8 digits, use the same PIN to sign in on another device)<input id="jp" type="password" inputmode="numeric" maxlength="8"></label>
-   <button class="on" onclick="doJoin()">Join league</button></div></div>
-   <div class="card"><b>Start your own league</b><div class="f" style="max-width:360px">
-   <label>League name<input id="cl" placeholder="MSA League" maxlength="50"></label>
-   <label>Your name<input id="cn" maxlength="40"></label>
-   <label>PIN (4-8 digits)<input id="cp" type="password" inputmode="numeric" maxlength="8"></label>
-   <button onclick="doCreate()">Create league</button></div></div>`}
-const doJoin=()=>run(async()=>{saveSession(await api("join",{code:$("#jc").value,name:$("#jn").value,pin:$("#jp").value}));await load()});
-const doCreate=()=>run(async()=>{saveSession(await api("createLeague",{leagueName:$("#cl").value,name:$("#cn").value,pin:$("#cp").value}));await load()});
+/* ---------- sign in ---------- */
+function courtHero(title){
+  return `<div class="court"><svg viewBox="0 0 160 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect class="chalk" pathLength="1" x="10" y="46" width="140" height="66" rx="3"/>
+    <path class="chalk" pathLength="1" d="M80 46V112"/><circle class="chalk" pathLength="1" cx="80" cy="79" r="12"/>
+    <path class="chalk" pathLength="1" d="M10 63H28V95H10M150 63H132V95H150"/><circle class="dot" cx="80" cy="79" r="2"/></svg>
+    <div class="court-title">${title}</div></div>`}
+function signinV(){
+  return `<section class="auth">${courtHero(`<h1>Pick your five.</h1>`)}
+   <form class="panel" onsubmit="return doSignin(event)" autocomplete="on">
+    <h2>${JC?"You're invited":"Sign in"}</h2>
+    <p class="lede">${JC?`Sign in to join league <b>${esc(JC)}</b>.`:"First time? Pick any name and a PIN. That becomes your sign-in for the league."}</p>
+    <div class="f">
+     <label>Your name<input id="an" name="username" autocomplete="username" maxlength="40" value="${esc(A.name)}" placeholder="e.g. Amgad" required></label>
+     <label>PIN<input id="ap" name="password" type="password" autocomplete="current-password" inputmode="numeric" maxlength="8" placeholder="4 to 8 digits" required><small>Use the same name and PIN to sign in on another device.</small></label>
+     <button class="on full" type="submit">Continue</button>
+    </div></form></section>`}
+function doSignin(e){
+  e.preventDefault();
+  const name=$("#an").value.trim().replace(/\s+/g," "),pin=$("#ap").value;
+  if(!name)return toast("Enter your name","err"),false;
+  if(!/^\d{4,8}$/.test(pin))return toast("PIN must be 4 to 8 digits","err"),false;
+  A.name=name;A.pin=pin;try{localStorage.setItem(LN,name)}catch(e){}
+  if(JC){joinLeague(JC)}else{ST.screen="leagues";fetchLeagues();render()}
+  return false}
+
+/* ---------- league picker ---------- */
+async function fetchLeagues(){
+  ST.leagues=null;render();
+  try{ST.leagues=(await api("leagues")).leagues}catch(e){ST.leagues="err"}
+  render()}
+function leaguesV(){
+  let list;
+  if(ST.leagues===null)list=`<div class="leagues"><div class="skel"></div><div class="skel"></div><div class="skel"></div></div>`;
+  else if(ST.leagues==="err")list=`<div class="empty">Couldn't load leagues.<div style="margin-top:10px"><button class="small" onclick="fetchLeagues()">Try again</button></div></div>`;
+  else if(!ST.leagues.length)list=`<div class="empty" style="margin-top:16px">No leagues yet. Create the first one below.</div>`;
+  else list=`<div class="leagues">${ST.leagues.map(l=>`<button type="button" class="league" data-code="${esc(l.code)}" onclick="joinLeague(this.dataset.code)">
+      <span><span class="nm">${esc(l.name)}</span><div class="meta">${l.members} ${l.members===1?"manager":"managers"}, round ${l.round}, squads ${l.open?"open":"locked"}</div></span>
+      <span class="go">Join</span></button>`).join("")}</div>`;
+  return `<section class="auth">${courtHero(`<h1>Pick a league</h1>`)}
+   <div class="panel"><h2>Available leagues</h2>
+    <p class="lede">Signing in as <b>${esc(A.name)}</b>. <a href="#" onclick="ST.screen='signin';render();return false">Not you?</a></p>
+    ${list}
+    <details class="more"><summary>Have a league code?</summary>
+      <form class="f" style="margin-top:6px" onsubmit="return doCode(event)">
+       <label>League code<input id="jc" placeholder="e.g. K7M2QX" autocapitalize="characters" maxlength="10"></label>
+       <button class="full" type="submit">Join with code</button></form></details>
+    <details class="more"><summary>Start your own league</summary>
+      <form class="f" style="margin-top:6px" onsubmit="return doCreate(event)">
+       <label>League name<input id="cl" placeholder="MSA League" maxlength="50"></label>
+       <button class="on full" type="submit">Create league</button></form></details>
+   </div></section>`}
+const joinLeague=code=>run(async()=>{
+  try{saveSession(await api("join",{code,name:A.name,pin:A.pin}))}
+  catch(e){if(code===JC){JC="";history.replaceState(null,"",location.pathname);ST.screen="leagues";fetchLeagues()}throw e}
+  await load()});
+function doCode(e){e.preventDefault();const c=$("#jc").value.trim();if(!c)toast("Enter a league code","err");else joinLeague(c);return false}
+function doCreate(e){e.preventDefault();const n=$("#cl").value.trim();if(!n){toast("Enter a league name","err");return false}
+  run(async()=>{saveSession(await api("createLeague",{leagueName:n,name:A.name,pin:A.pin}));await load()});return false}
 
 /* ---------- helpers ---------- */
 const P=id=>ST.d.players.find(p=>p.id==id);
@@ -98,66 +263,56 @@ const inviteText=()=>`Join my fantasy football league "${ST.d.league.name}" on M
 const wa=t=>"https://wa.me/?text="+encodeURIComponent(t);
 const opts=(list,sel,ph)=>`<option value="">${ph||"Select"}</option>`+list.map(p=>`<option value="${p.id}" ${p.id==sel?"selected":""}>${esc(p.name)}${p.price!=null?" ("+p.price+")":""}</option>`).join("");
 const roleSlots={GK:["gk"],DEF:["def"],MID:["m1","m2"],FWD:["fwd"]};
-const slotLabel={gk:"GK",def:"DEF",m1:"MID 1",m2:"MID 2",fwd:"FWD"};
+const slotLabel={gk:"GK",def:"DEF",m1:"MID",m2:"MID",fwd:"FWD"};
 const roleOrder=["GK","DEF","MID","FWD"];
-const allSlotKeys=["gk","def","m1","m2","fwd"];
+const formation=[["fwd"],["m1","m2"],["def"],["gk"]];
+const initials=n=>String(n).trim().split(/\s+/).map(w=>w[0]).join("").slice(0,2).toUpperCase();
+function clearSlot(key){const id=ST.draft[key];ST.draft[key]="";if(id&&ST.draft.cap==id)ST.draft.cap="";render()}
 function pitchSlot(key){
-  const id=ST.draft[key];
-  const player=P(id);
-  const captain=id&&id==ST.draft.cap;
-  return `<button type="button" class="slot ${player?"filled":""}" onclick="if(${!!player}){ST.draft.${key}='';if(ST.draft.cap==${id||0})ST.draft.cap='';render();}return false;">
-    <span class="slot-label">${slotLabel[key]}</span>
-    ${player?`<span class="slot-name">${esc(player.name)}</span><span class="slot-meta">${player.pos} · ${player.price}</span>${captain?'<span class="captain-badge">C</span>':''}`:`<span class="slot-empty">Pick ${slotLabel[key]}</span>`}
-  </button>`
-}
+  const id=ST.draft[key],player=P(id),captain=id&&id==ST.draft.cap;
+  return `<button type="button" class="slot ${player?"filled":""}" ${player?`onclick="clearSlot('${key}')" aria-label="Remove ${esc(player.name)}"`:`aria-label="Empty ${slotLabel[key]} slot" tabindex="-1"`}>
+    <span class="shirt">${player?esc(initials(player.name)):"+"}</span>
+    <span class="tag">${player?esc(player.name):slotLabel[key]}</span>
+    ${player?`<span class="price">${player.price}</span>`:""}${captain?'<span class="cap" title="Captain">C</span>':""}</button>`}
 function selectPlayer(playerId){
-  const player=P(playerId); if(!player) return;
+  const player=P(playerId);if(!player)return;
   const keys=roleSlots[player.pos]||[];
   const existing=keys.find(k=>String(ST.draft[k])===String(playerId));
-  if(existing){ ST.draft[existing]=""; if(ST.draft.cap==playerId) ST.draft.cap=""; fixCap(); render(); return; }
+  if(existing){ST.draft[existing]="";if(ST.draft.cap==playerId)ST.draft.cap="";fixCap();render();return}
   const target=keys.find(k=>!ST.draft[k]);
   const replaceKey=target||keys[0];
   const oldId=ST.draft[replaceKey];
   ST.draft[replaceKey]=playerId;
-  if(oldId && ST.draft.cap==oldId) ST.draft.cap=playerId;
-  if(!ST.draft.cap) ST.draft.cap=playerId;
-  fixCap(); render();
-}
+  if(oldId&&ST.draft.cap==oldId)ST.draft.cap=playerId;
+  if(!ST.draft.cap)ST.draft.cap=playerId;
+  fixCap();render()}
 function bankCards(pos){
-  const list=ST.d.players.filter(p=>p.pos===pos && (p.active || ids(ST.draft).includes(p.id)));
-  return list.map(p=>{
-    const sel=ids(ST.draft).includes(p.id);
-    return `<button type="button" class="player-card ${sel?"selected":""}" onclick="selectPlayer(${p.id})">
-      <span class="player-name">${esc(p.name)}</span>
-      <span class="player-meta">${p.pos} · ${p.price}</span>
-      <span class="player-badge">${sel?"Selected":"Pick"}</span>
-    </button>`;
-  }).join("")||`<div class="empty-bank">No ${pos.toLowerCase()} players available.</div>`;
-}
+  const list=ST.d.players.filter(p=>p.pos===pos&&(p.active||ids(ST.draft).includes(p.id)));
+  return list.map(p=>{const sel=ids(ST.draft).includes(p.id);
+    return `<button type="button" class="pc ${sel?"selected":""}" onclick="selectPlayer(${p.id})" aria-pressed="${sel}">
+      <span><span class="nm">${esc(p.name)}</span><div class="st">${sel?"In your squad":"&nbsp;"}</div></span><span class="pr">${p.price}</span></button>`}).join("")||`<div class="empty-bank">No ${pos.toLowerCase()} players available.</div>`}
 
 /* ---------- tabs ---------- */
 function squadV(){
   const d=ST.d,L=d.league,q=ST.draft,s=status(q),ok=s==="OK";
   const prev=d.prev;let tr=0;if(prev&&ids(q).every(Boolean))tr=ids(q).filter(i=>!ids(prev).includes(i)).length;
-  const pen=Math.max(0,tr-L.freeTr)*L.penalty;
-  const pitch = `<div class="pitch-wrap"><div class="pitch"><div class="pitch-lines"></div>${allSlotKeys.map(k=>pitchSlot(k)).join("")}</div></div>`;
-  const teamSummary = `<div class="card mini-summary"><div class="row"><span>Cost</span><b>${cost(q)} / ${L.budget}</b></div><div class="row"><span>Status</span><b class="${ok?"ok":"bad"}">${s}</b></div>${prev?`<div class="row"><span>Transfers</span><b>${tr} (${pen?`-`+pen:`0`})</b></div>`:""}</div>`;
-
-  return `<div class="card"><div class="row" style="margin-bottom:12px"><b>Round ${L.round} · ${L.open?'<span class="ok">squads open</span>':'<span class="bad">squads locked</span>'}</b>
-   <span class="mu">Captain ×${L.capMult}</span></div>
+  const pen=Math.max(0,tr-L.freeTr)*L.penalty,c=cost(q),pct=Math.min(100,c/L.budget*100);
+  const pitch=`<div class="pitch"><svg viewBox="0 0 100 120" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <rect x="4" y="4" width="92" height="112" rx="1.5"/><path d="M4 60H96"/><circle cx="50" cy="60" r="11"/>
+    <path d="M26 4V18H74V4M38 4V10H62V4M26 116V102H74V116M38 116V110H62V116"/></svg>
+    <div class="formation">${formation.map(r=>`<div class="line">${r.map(pitchSlot).join("")}</div>`).join("")}</div></div>`;
+  return `<div class="card"><div class="row"><h2>Round ${L.round}</h2>
+     <span class="chip ${L.open?"open":"locked"}">${L.open?"Squads open":"Squads locked"}</span></div>
+   <div class="row" style="margin:12px 0 8px"><span class="mu">Budget used</span><b>${c} / ${L.budget}</b></div>
+   <div class="meter ${c>L.budget?"over":""}"><i style="width:${pct}%"></i></div>
    ${pitch}
-   <div class="caption-row">
-     <div class="mu">Select players from the list below. Tap a selected player to remove them.</div>
-     <div class="captain-picker">
-       <label>Captain<select ${L.open?"":"disabled"} onchange="ST.draft.cap=this.value||'';render()">${opts(ids(q).filter(Boolean).map(P).filter(Boolean),q.cap,"Select captain")}</select></label>
-     </div>
-   </div>
-   ${teamSummary}
-   <div style="margin-top:12px"><button class="on" ${ok&&L.open?"":"disabled"} onclick="saveSquad()">Save squad</button></div></div>
-   <div class="card">
-     <div class="row" style="margin-bottom:10px"><b>Player pool</b><span class="mu">Choose your squad</span></div>
-     <div class="player-bank-wrap">${roleOrder.map(pos=>`<div class="player-bank-section"><div class="bank-title">${pos}</div><div class="player-bank">${bankCards(pos)}</div></div>`).join("")}</div>
-   </div>`}
+   <p class="mu" style="text-align:center;margin:0 0 14px">Tap a player below to add them. Tap one on the pitch to remove.</p>
+   <label>Captain (scores ×${L.capMult})<select ${L.open?"":"disabled"} onchange="ST.draft.cap=this.value||'';render()">${opts(ids(q).filter(Boolean).map(P).filter(Boolean),q.cap,"Select captain")}</select></label>
+   <div class="stats"><div class="stat"><span>Status</span><b class="${ok?"ok":"bad"}">${s}</b></div>
+    ${prev?`<div class="stat"><span>Transfers</span><b>${tr}${pen?` (-${pen} pts)`:""}</b></div>`:""}</div>
+   <div style="margin-top:16px"><button class="on full" ${ok&&L.open?"":"disabled"} onclick="saveSquad()">Save squad</button></div></div>
+   <div class="card"><h2>Player pool</h2><p class="mu" style="margin:0 0 14px">Squad: 1 GK, 1 DEF, 2 MID, 1 FWD.</p>
+     <div class="pool">${roleOrder.map(pos=>`<div><h3>${pos}</h3><div class="pcards">${bankCards(pos)}</div></div>`).join("")}</div></div>`}
 const fixCap=()=>{if(!ids(ST.draft).includes(+ST.draft.cap))ST.draft.cap=""};
 const saveSquad=()=>run(async()=>{await api("saveSquad",ST.draft);await load();toast("Squad saved")});
 
@@ -166,39 +321,44 @@ function board(){
   const rows=d.standings.map(m=>{let s=0,c=0,p=0;for(const r in m.rounds){if(ST.round!=="all"&&r!=ST.round)continue;s+=m.rounds[r].pts;c+=m.rounds[r].cap;p+=m.rounds[r].pen}return{...m,s,c,p,t:s+c-p}});
   rows.sort((a,b)=>b.t-a.t||b.s-a.s||a.name.localeCompare(b.name));
   rows.forEach((r,i)=>r.rank=i&&rows[i-1].t===r.t&&rows[i-1].s===r.s?rows[i-1].rank:i+1);
-  return `<div class="card"><div class="row"><b>Invite friends</b><a href="${wa(inviteText())}" target="_blank" rel="noopener"><button class="on">Invite on WhatsApp</button></a></div>
-   <div class="mu" style="margin-top:6px">League code: <b>${esc(d.league.code)}</b></div></div>
-   <div class="card row"><b>Leaderboard</b><select onchange="ST.round=this.value;render()"><option value="all">All rounds</option>${rounds.map(r=>`<option value="${r}" ${r==ST.round?"selected":""}>Round ${r}</option>`).join("")}</select></div>
-   <div class="card scroll"><table><tr><th>#</th><th>Manager</th><th>Squad</th><th>Capt.</th><th>Pen.</th><th>Total</th></tr>
-   ${rows.map(r=>`<tr><td>${r.rank}</td><td><b>${esc(r.name)}</b><div class="mu">${r.joined?esc(r.picks):"No squad yet"}</div></td><td>${r.s}</td><td>+${r.c}</td><td>${r.p?"-"+r.p:0}</td><td><b>${r.t}</b></td></tr>`).join("")}</table></div>
-   <button onclick="window.open(wa(shareText()),'_blank')">Share leaderboard on WhatsApp</button>`}
+  return `<div class="card"><div class="row"><h2>Invite friends</h2><a href="${wa(inviteText())}" target="_blank" rel="noopener" style="text-decoration:none"><button class="bib">Invite on WhatsApp</button></a></div>
+   <div class="code">${esc(d.league.code)}</div>
+   <div class="row"><span class="mu">League code</span><button class="small" onclick="copyInvite()">Copy invite link</button></div></div>
+   <div class="card"><div class="row" style="margin-bottom:6px"><h2>Leaderboard</h2><div style="width:160px"><select aria-label="Round" onchange="ST.round=this.value;render()"><option value="all">All rounds</option>${rounds.map(r=>`<option value="${r}" ${r==ST.round?"selected":""}>Round ${r}</option>`).join("")}</select></div></div>
+   ${rows.map(r=>`<div class="rank ${r.rank===1?"first":""}"><div class="n">${r.rank}</div>
+     <div class="who"><b>${esc(r.name)}</b><div class="picks">${r.joined?esc(r.picks):"No squad yet"}</div></div>
+     <div><div class="tot">${r.t}</div><div class="brk">${r.s} +${r.c} ${r.p?"-"+r.p:"-0"}</div></div></div>`).join("")}
+   <p class="hint" style="margin:10px 0 0">Under each total: squad points, captain bonus, transfer penalty.</p></div>
+   <button class="full" onclick="window.open(wa(shareText()),'_blank')">Share leaderboard on WhatsApp</button>`}
+function copyInvite(){const t=inviteUrl();(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("Invite link copied"),()=>toast(t))}
 function shareText(){const d=ST.d;const rows=[...d.standings].map(m=>{let t=0;for(const r in m.rounds){if(ST.round!=="all"&&r!=ST.round)continue;const x=m.rounds[r];t+=x.pts+x.cap-x.pen}return[m.name,t]}).sort((a,b)=>b[1]-a[1]);
   return `${d.league.name} leaderboard (${ST.round==="all"?"all rounds":"round "+ST.round})\n`+rows.map((r,i)=>`${i+1}. ${r[0]} - ${r[1]}`).join("\n")}
 
 function playersV(){
   const d=ST.d,tot={};d.stats.forEach(e=>tot[e.player_id]=(tot[e.player_id]||0)+e.pts);
-  return `<div class="card scroll"><b>Players & prices</b><table><tr><th>Player</th><th>Pos</th><th>Avg</th><th>Price</th><th>Pts</th></tr>
-   ${d.players.filter(p=>p.active).map(p=>`<tr><td>${esc(p.name)}</td><td>${p.pos}</td><td>${p.avg}</td><td><b>${p.price}</b></td><td>${tot[p.id]||0}</td></tr>`).join("")}</table></div>
-   <div class="card"><b>Scoring</b><table>${Object.entries(d.scoring).map(([k,v])=>`<tr><td>${SL[k]}</td><td><b>${v>0?"+":""}${v}</b></td></tr>`).join("")}</table>
-   <div class="mu" style="margin-top:8px">Squad: 1 GK, 1 DEF, 2 MID, 1 FWD. Captain ×${d.league.capMult}. 1 free transfer per round, then -${d.league.penalty} pts each.</div></div>`}
+  return `<div class="card scroll"><h2>Players and prices</h2><table><tr><th>Player</th><th>Pos</th><th>Avg</th><th>Price</th><th>Pts</th></tr>
+   ${d.players.filter(p=>p.active).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.pos}</td><td>${p.avg}</td><td><b>${p.price}</b></td><td>${tot[p.id]||0}</td></tr>`).join("")}</table></div>
+   <div class="card"><h2>Scoring</h2><table>${Object.entries(d.scoring).map(([k,v])=>`<tr><td>${SL[k]}</td><td><b>${v>0?"+":""}${v}</b></td></tr>`).join("")}</table>
+   <p class="mu" style="margin:12px 0 0">Squad: 1 GK, 1 DEF, 2 MID, 1 FWD. Captain ×${d.league.capMult}. 1 free transfer per round, then -${d.league.penalty} pts each.</p></div>`}
 const SL={played:"Played",goals:"Goal",assists:"Assist",cs:"Clean sheet (GK, DEF)",ps:"Penalty save",pm:"Penalty miss",yc:"Yellow card",rc:"Red card",og:"Own goal",win:"Team win",motm:"Man of the match"};
 
 function adminV(){
   const d=ST.d,L=d.league;
   const f=Object.keys(SL).map(k=>["played","cs","win","motm"].includes(k)?`<label>${SL[k]}<select id="s_${k}"><option value="${k==="played"?1:0}">${k==="played"?"Yes":"No"}</option><option value="${k==="played"?0:1}">${k==="played"?"No":"Yes"}</option></select></label>`:`<label>${SL[k]}<input id="s_${k}" type="number" min="0" value="0"></label>`).join("");
-  return `<div class="card"><b>Round ${L.round}</b> · ${L.open?"squads open":"squads locked"}<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+  return `<div class="card"><div class="row"><h2>Round ${L.round}</h2><span class="chip ${L.open?"open":"locked"}">${L.open?"Squads open":"Squads locked"}</span></div>
+   <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap">
    <button onclick="setOpen(${!L.open})">${L.open?"Lock squads":"Reopen squads"}</button>
    <button class="on" onclick="if(confirm('Start round ${L.round+1}? Everyone keeps their squad and can transfer.'))nextRound()">Start round ${L.round+1}</button></div></div>
-   <div class="card"><b>Add match stats</b><div class="grid" style="margin-top:8px"><label>Round<input id="s_round" type="number" min="1" max="${L.round}" value="${L.round}"></label>
+   <div class="card"><h2>Add match stats</h2><div class="grid" style="margin-top:14px"><label>Round<input id="s_round" type="number" min="1" max="${L.round}" value="${L.round}"></label>
    <label>Player<select id="s_player">${opts(d.players.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),"","Select")}</select></label>${f}</div>
-   <div style="margin-top:10px"><button class="on" onclick="addStat()">Save stats</button> <span class="mu">Saving again for the same player and round replaces it.</span></div></div>
-   <div class="card scroll"><b>Recent stats</b><table><tr><th>Rd</th><th>Player</th><th>Pts</th><th></th></tr>${[...d.stats].reverse().slice(0,30).map(e=>`<tr><td>${e.round}</td><td>${esc(P(e.player_id)?.name)}</td><td><b>${e.pts}</b></td><td><button onclick="if(confirm('Delete?'))delStat(${e.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="4" class="mu">No matches yet.</td></tr>`}</table></div>
-   <div class="card"><b>Add a player</b><div class="grid" style="margin-top:8px"><label>Name<input id="n_name" maxlength="40"></label>
+   <div style="margin-top:16px"><button class="on" onclick="addStat()">Save stats</button></div><p class="mu" style="margin:10px 0 0">Saving again for the same player and round replaces it.</p></div>
+   <div class="card scroll"><h2>Recent stats</h2><table><tr><th>Rd</th><th>Player</th><th>Pts</th><th></th></tr>${[...d.stats].reverse().slice(0,30).map(e=>`<tr><td>${e.round}</td><td>${esc(P(e.player_id)?.name)}</td><td><b>${e.pts}</b></td><td><button class="small" onclick="if(confirm('Delete?'))delStat(${e.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="4" class="mu">No matches yet.</td></tr>`}</table></div>
+   <div class="card"><h2>Add a player</h2><div class="grid" style="margin-top:14px"><label>Name<input id="n_name" maxlength="40"></label>
    <label>Position<select id="n_pos"><option>GK</option><option>DEF</option><option>MID</option><option>FWD</option></select></label>
    <label>Ratings (comma separated)<input id="n_rat" placeholder="7, 8, 6.5, 7, 9"></label><label>Price (optional)<input id="n_price" type="number" step="0.1" placeholder="auto"></label></div>
-   <div class="mu" style="margin-top:6px">Auto price scales the average rating from 5 to 15, same as the spreadsheet.</div><div style="margin-top:10px"><button class="on" onclick="addPlayer()">Add player</button></div></div>
-   <div class="card scroll"><b>Edit prices</b><div class="mu">Changing a price affects budget checks for future saves only.</div><table><tr><th>Player</th><th>Price</th><th>Active</th><th></th></tr>
-   ${d.players.map(p=>`<tr><td>${esc(p.name)} <span class="mu">${p.pos}</span></td><td><input id="pr_${p.id}" type="number" step="0.1" value="${p.price}" style="width:80px"></td><td><input type="checkbox" id="ac_${p.id}" ${p.active?"checked":""}></td><td><button onclick="editPlayer(${p.id})">Save</button></td></tr>`).join("")}</table></div>`}
+   <p class="mu" style="margin:10px 0 0">Auto price scales the average rating from 5 to 15, same as the spreadsheet.</p><div style="margin-top:14px"><button class="on" onclick="addPlayer()">Add player</button></div></div>
+   <div class="card scroll"><h2>Edit prices</h2><p class="mu" style="margin:0 0 6px">Changing a price affects budget checks for future saves only.</p><table><tr><th>Player</th><th>Price</th><th>Active</th><th></th></tr>
+   ${d.players.map(p=>`<tr><td>${esc(p.name)} <span class="mu">${p.pos}</span></td><td><input id="pr_${p.id}" type="number" step="0.1" value="${p.price}" style="width:90px"></td><td><input type="checkbox" id="ac_${p.id}" ${p.active?"checked":""}></td><td><button class="small" onclick="editPlayer(${p.id})">Save</button></td></tr>`).join("")}</table></div>`}
 const setOpen=o=>run(async()=>{await api("setOpen",{open:o});await load(false)});
 const nextRound=()=>run(async()=>{await api("nextRound");ST.draft=null;await load()});
 const addStat=()=>run(async()=>{const b={round:$("#s_round").value,player:$("#s_player").value};Object.keys(SL).forEach(k=>b[k]=$("#s_"+k).value);await api("addStat",b);await load(false);toast("Stats saved")});
@@ -206,15 +366,30 @@ const delStat=id=>run(async()=>{await api("deleteStat",{id});await load(false)})
 const addPlayer=()=>run(async()=>{await api("addPlayer",{name:$("#n_name").value,pos:$("#n_pos").value,ratings:$("#n_rat").value,price:$("#n_price").value});await load(false);toast("Player added")});
 const editPlayer=id=>run(async()=>{await api("editPlayer",{id,price:$("#pr_"+id).value,active:$("#ac_"+id).checked});await load(false);toast("Saved")});
 
+/* ---------- render ---------- */
+let viewKey="";
+function paint(html,key){
+  const app=$("#app"),y=window.scrollY,same=key===viewKey;
+  app.innerHTML=html;viewKey=key;
+  if(!same){app.firstElementChild&&app.firstElementChild.classList.add("view-enter");window.scrollTo(0,0)}else window.scrollTo(0,y)}
 function render(){
-  if(!ST.sess||!ST.d){$("#nav").innerHTML="";$("#v").innerHTML=welcome();return}
+  const nav=$("#nav");
+  if(!ST.sess){nav.innerHTML="";return paint(ST.screen==="leagues"?leaguesV():signinV(),"auth-"+ST.screen)}
+  if(!ST.d){nav.innerHTML="";
+    return paint(ST.loadErr
+      ?`<section class="auth"><div class="panel"><h2>Couldn't load your league</h2><p class="lede">${esc(ST.loadErr)}</p><div class="f"><button class="on full" onclick="retryLoad()">Try again</button><button class="full" onclick="logout()">Sign out</button></div></div></section>`
+      :`<section class="auth"><div class="court" style="aspect-ratio:16/9"><div class="court-title"><h1>Loading your squad</h1></div></div><div class="leagues" style="margin-top:14px"><div class="skel"></div><div class="skel"></div></div></section>`,"loading")}
   const d=ST.d,T={sq:"My squad",lb:"Leaderboard",pl:"Players"};if(d.me.owner)T.ad="Admin";
   if(!T[ST.tab])ST.tab="sq";
-  $("#ttl").textContent=d.league.name;$("#sub").textContent=`${d.me.name}${d.me.owner?" (owner)":""} · budget ${d.league.budget} · `;
-  $("#sub").insertAdjacentHTML("beforeend",`<a href="#" onclick="if(confirm('Sign out on this device?'))logout();return false">sign out</a>`);
-  $("#nav").innerHTML=Object.keys(T).map(k=>`<button class="${ST.tab===k?"on":""}" onclick="ST.tab='${k}';render()">${T[k]}</button>`).join("");
-  $("#v").innerHTML=({sq:squadV,lb:board,pl:playersV,ad:adminV})[ST.tab]()}
+  nav.innerHTML=Object.keys(T).map(k=>`<button class="${ST.tab===k?"on":""}" onclick="ST.tab='${k}';render()" ${ST.tab===k?'aria-current="page"':""}>${T[k]}</button>`).join("");
+  paint(`<header class="topbar"><div class="topbar-in"><div><h1>${esc(d.league.name)}</h1>
+    <div class="sub">${esc(d.me.name)}${d.me.owner?" (owner)":""}, budget ${d.league.budget}</div></div>
+    <button class="ghost" onclick="if(confirm('Sign out on this device?'))logout()">Sign out</button></div></header><main>${({sq:squadV,lb:board,pl:playersV,ad:adminV})[ST.tab]()}</main>`,"app-"+ST.tab);
+  // keep the header from re-animating on every pick: only animate main on tab change
+}
+const retryLoad=()=>{ST.loadErr="";render();load().catch(e=>{ST.loadErr=e.message;render()})};
 render();
-if(ST.sess)load().catch(e=>{toast(e.message)});
+if(ST.sess)load().catch(e=>{ST.loadErr=e.message;render()});
+else if(JC){} 
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ST.sess&&ST.d&&!ST.busy)load(false).catch(()=>{})});
 </script></body></html>

@@ -88,6 +88,12 @@ const A = {
     return { token, code: L.code };
   },
 
+  async leagues() { // read-only list for the league picker; no game logic touched
+    const rows = await sql`select l.name, l.code, l.round, l.open, (select count(*)::int from members m where m.league_id = l.id) as members
+      from leagues l order by l.id desc limit 50`;
+    return { leagues: rows };
+  },
+
   async state(b) {
     const { m, L } = await auth(b);
     const [players, members, squads, stats] = await Promise.all([
