@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MSA Fantasy Football</title>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--tx:#1a1d23;--mu:#6b7280;--ac:#1f6f43;--bd:#d9dde3;--bad:#b42318;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root{--bg:#14171c;--card:#1d2128;--tx:#eceef2;--mu:#98a0ad;--ac:#3fb978;--bd:#323843;--bad:#f97066}}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
+header{padding:16px 16px 4px}h1{margin:0;font-size:20px}
+nav{display:flex;gap:6px;padding:8px 16px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);z-index:2;overflow-x:auto}nav button{flex:1;white-space:nowrap}
+main{padding:8px 16px 32px;max-width:900px;margin:auto}
+button,select,input,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--bd);border-radius:8px;padding:8px 10px}
+button{cursor:pointer}button.on{background:var(--ac);color:#fff;border-color:var(--ac)}button:disabled{opacity:.5}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin:10px 0}.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%}th,td{padding:8px 6px;text-align:left;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mu);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}.grid label,.f label{display:flex;flex-direction:column;font-size:12px;color:var(--mu);gap:3px}
+.grid select,.grid input,.f input,.f select{width:100%}.f{display:grid;gap:10px;margin-top:10px}
+.mu{color:var(--mu);font-size:13px}.ok{color:var(--ac);font-weight:600}.bad{color:var(--bad);font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:9;max-width:90%}
+</style></head><body>
+<header><h1 id="ttl">MSA Fantasy Football</h1><div class="mu" id="sub">5-player squads · budget 50</div></header>
+<nav id="nav"></nav><main id="v"></main><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const LS="msa_session";
+let ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false};
+try{ST.sess=JSON.parse(localStorage.getItem(LS))}catch(e){}
+function toast(m){const t=$("#toast");t.textContent=m;t.style.display="block";clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display="none",2800)}
+async function api(action,body={}){
+  const r=await fetch("/api",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,...(ST.sess||{}),...body})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){if(r.status===401&&ST.sess)logout(true);throw new Error(j.error||"Something went wrong")}
+  return j}
+async function run(fn){if(ST.busy)return;ST.busy=true;try{await fn()}catch(e){toast(e.message)}finally{ST.busy=false}}
+function logout(silent){localStorage.removeItem(LS);ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false};if(!silent||true)render()}
+async function load(resetDraft=true){
+  ST.d=await api("state");const d=ST.d;
+  if(resetDraft||!ST.draft)ST.draft=Object.assign({gk:"",def:"",m1:"",m2:"",fwd:"",cap:""},d.mine||{});
+  render()}
+function saveSession(j){ST.sess={token:j.token,code:j.code};localStorage.setItem(LS,JSON.stringify(ST.sess));history.replaceState(null,"",location.pathname)}
+
+/* ---------- welcome ---------- */
+function welcome(){
+  const jc=new URLSearchParams(location.search).get("join")||"";
+  return `<div class="card"><b>${jc?"Join a league":"Welcome"}</b><div class="f" style="max-width:360px">
+   <label>League code<input id="jc" value="${esc(jc)}" placeholder="e.g. K7M2QX" autocapitalize="characters"></label>
+   <label>Your name<input id="jn" placeholder="Your name" maxlength="40"></label>
+   <label>PIN (4-8 digits, use the same PIN to sign in on another device)<input id="jp" type="password" inputmode="numeric" maxlength="8"></label>
+   <button class="on" onclick="doJoin()">Join league</button></div></div>
+   <div class="card"><b>Start your own league</b><div class="f" style="max-width:360px">
+   <label>League name<input id="cl" placeholder="MSA League" maxlength="50"></label>
+   <label>Your name<input id="cn" maxlength="40"></label>
+   <label>PIN (4-8 digits)<input id="cp" type="password" inputmode="numeric" maxlength="8"></label>
+   <button onclick="doCreate()">Create league</button></div></div>`}
+const doJoin=()=>run(async()=>{saveSession(await api("join",{code:$("#jc").value,name:$("#jn").value,pin:$("#jp").value}));await load()});
+const doCreate=()=>run(async()=>{saveSession(await api("createLeague",{leagueName:$("#cl").value,name:$("#cn").value,pin:$("#cp").value}));await load()});
+
+/* ---------- helpers ---------- */
+const P=id=>ST.d.players.find(p=>p.id==id);
+const ids=q=>[q.gk,q.def,q.m1,q.m2,q.fwd];
+const cost=q=>Math.round(ids(q).reduce((a,i)=>a+(P(i)?P(i).price:0),0)*10)/10;
+function status(q){const d=ST.d.league;if(ids(q).some(x=>!x)||!q.cap)return"Incomplete";if(cost(q)>d.budget)return"Over budget";if(q.m1==q.m2)return"Duplicate MID";if(!ids(q).includes(+q.cap))return"Captain not in squad";return"OK"}
+const inviteUrl=()=>location.origin+"/?join="+ST.d.league.code;
+const inviteText=()=>`Join my fantasy football league "${ST.d.league.name}" on MSA! Open ${inviteUrl()} (league code: ${ST.d.league.code})`;
+const wa=t=>"https://wa.me/?text="+encodeURIComponent(t);
+const opts=(list,sel,ph)=>`<option value="">${ph||"Select"}</option>`+list.map(p=>`<option value="${p.id}" ${p.id==sel?"selected":""}>${esc(p.name)}${p.price!=null?" ("+p.price+")":""}</option>`).join("");
+
+/* ---------- tabs ---------- */
+function squadV(){
+  const d=ST.d,L=d.league,q=ST.draft,s=status(q),ok=s==="OK";
+  const prev=d.prev;let tr=0;if(prev&&ids(q).every(Boolean))tr=ids(q).filter(i=>!ids(prev).includes(i)).length;
+  const pen=Math.max(0,tr-L.freeTr)*L.penalty;
+  const slots=[["gk","GK","GK"],["def","DEF","DEF"],["m1","MID","MID 1"],["m2","MID","MID 2"],["fwd","FWD","FWD"]];
+  return `<div class="card"><div class="row"><b>Round ${L.round} · ${L.open?'<span class="ok">squads open</span>':'<span class="bad">squads locked</span>'}</b>
+   <span class="mu">Cost ${cost(q)} / ${L.budget} · <span class="${ok?"ok":"bad"}">${s}</span></span></div>
+   <div class="grid" style="margin-top:8px">${slots.map(([k,pos,l])=>`<label>${l}<select ${L.open?"":"disabled"} onchange="ST.draft.${k}=this.value;fixCap();render()">${opts(d.players.filter(p=>p.pos===pos&&(p.active||p.id==q[k])),q[k])}</select></label>`).join("")}
+   <label>Captain (×${L.capMult})<select ${L.open?"":"disabled"} onchange="ST.draft.cap=this.value;render()">${opts(ids(q).filter(Boolean).map(P).filter(Boolean),q.cap)}</select></label></div>
+   ${prev?`<div class="mu" style="margin-top:8px">Transfers this round: ${tr} (${L.freeTr} free, then -${L.penalty} pts each)${pen?` · <span class="bad">penalty -${pen}</span>`:""}</div>`:""}
+   <div style="margin-top:10px"><button class="on" ${ok&&L.open?"":"disabled"} onclick="saveSquad()">Save squad</button></div></div>`}
+const fixCap=()=>{if(!ids(ST.draft).includes(+ST.draft.cap))ST.draft.cap=""};
+const saveSquad=()=>run(async()=>{await api("saveSquad",ST.draft);await load();toast("Squad saved")});
+
+function board(){
+  const d=ST.d,rounds=Array.from({length:d.league.round},(_,i)=>i+1);
+  const rows=d.standings.map(m=>{let s=0,c=0,p=0;for(const r in m.rounds){if(ST.round!=="all"&&r!=ST.round)continue;s+=m.rounds[r].pts;c+=m.rounds[r].cap;p+=m.rounds[r].pen}return{...m,s,c,p,t:s+c-p}});
+  rows.sort((a,b)=>b.t-a.t||b.s-a.s||a.name.localeCompare(b.name));
+  rows.forEach((r,i)=>r.rank=i&&rows[i-1].t===r.t&&rows[i-1].s===r.s?rows[i-1].rank:i+1);
+  return `<div class="card"><div class="row"><b>Invite friends</b><a href="${wa(inviteText())}" target="_blank" rel="noopener"><button class="on">Invite on WhatsApp</button></a></div>
+   <div class="mu" style="margin-top:6px">League code: <b>${esc(d.league.code)}</b></div></div>
+   <div class="card row"><b>Leaderboard</b><select onchange="ST.round=this.value;render()"><option value="all">All rounds</option>${rounds.map(r=>`<option value="${r}" ${r==ST.round?"selected":""}>Round ${r}</option>`).join("")}</select></div>
+   <div class="card scroll"><table><tr><th>#</th><th>Manager</th><th>Squad</th><th>Capt.</th><th>Pen.</th><th>Total</th></tr>
+   ${rows.map(r=>`<tr><td>${r.rank}</td><td><b>${esc(r.name)}</b><div class="mu">${r.joined?esc(r.picks):"No squad yet"}</div></td><td>${r.s}</td><td>+${r.c}</td><td>${r.p?"-"+r.p:0}</td><td><b>${r.t}</b></td></tr>`).join("")}</table></div>
+   <button onclick="window.open(wa(shareText()),'_blank')">Share leaderboard on WhatsApp</button>`}
+function shareText(){const d=ST.d;const rows=[...d.standings].map(m=>{let t=0;for(const r in m.rounds){if(ST.round!=="all"&&r!=ST.round)continue;const x=m.rounds[r];t+=x.pts+x.cap-x.pen}return[m.name,t]}).sort((a,b)=>b[1]-a[1]);
+  return `${d.league.name} leaderboard (${ST.round==="all"?"all rounds":"round "+ST.round})\n`+rows.map((r,i)=>`${i+1}. ${r[0]} - ${r[1]}`).join("\n")}
+
+function playersV(){
+  const d=ST.d,tot={};d.stats.forEach(e=>tot[e.player_id]=(tot[e.player_id]||0)+e.pts);
+  return `<div class="card scroll"><b>Players & prices</b><table><tr><th>Player</th><th>Pos</th><th>Avg</th><th>Price</th><th>Pts</th></tr>
+   ${d.players.filter(p=>p.active).map(p=>`<tr><td>${esc(p.name)}</td><td>${p.pos}</td><td>${p.avg}</td><td><b>${p.price}</b></td><td>${tot[p.id]||0}</td></tr>`).join("")}</table></div>
+   <div class="card"><b>Scoring</b><table>${Object.entries(d.scoring).map(([k,v])=>`<tr><td>${SL[k]}</td><td><b>${v>0?"+":""}${v}</b></td></tr>`).join("")}</table>
+   <div class="mu" style="margin-top:8px">Squad: 1 GK, 1 DEF, 2 MID, 1 FWD. Captain ×${d.league.capMult}. 1 free transfer per round, then -${d.league.penalty} pts each.</div></div>`}
+const SL={played:"Played",goals:"Goal",assists:"Assist",cs:"Clean sheet (GK, DEF)",ps:"Penalty save",pm:"Penalty miss",yc:"Yellow card",rc:"Red card",og:"Own goal",win:"Team win",motm:"Man of the match"};
+
+function adminV(){
+  const d=ST.d,L=d.league;
+  const f=Object.keys(SL).map(k=>["played","cs","win","motm"].includes(k)?`<label>${SL[k]}<select id="s_${k}"><option value="${k==="played"?1:0}">${k==="played"?"Yes":"No"}</option><option value="${k==="played"?0:1}">${k==="played"?"No":"Yes"}</option></select></label>`:`<label>${SL[k]}<input id="s_${k}" type="number" min="0" value="0"></label>`).join("");
+  return `<div class="card"><b>Round ${L.round}</b> · ${L.open?"squads open":"squads locked"}<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+   <button onclick="setOpen(${!L.open})">${L.open?"Lock squads":"Reopen squads"}</button>
+   <button class="on" onclick="if(confirm('Start round ${L.round+1}? Everyone keeps their squad and can transfer.'))nextRound()">Start round ${L.round+1}</button></div></div>
+   <div class="card"><b>Add match stats</b><div class="grid" style="margin-top:8px"><label>Round<input id="s_round" type="number" min="1" max="${L.round}" value="${L.round}"></label>
+   <label>Player<select id="s_player">${opts(d.players.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),"","Select")}</select></label>${f}</div>
+   <div style="margin-top:10px"><button class="on" onclick="addStat()">Save stats</button> <span class="mu">Saving again for the same player and round replaces it.</span></div></div>
+   <div class="card scroll"><b>Recent stats</b><table><tr><th>Rd</th><th>Player</th><th>Pts</th><th></th></tr>${[...d.stats].reverse().slice(0,30).map(e=>`<tr><td>${e.round}</td><td>${esc(P(e.player_id)?.name)}</td><td><b>${e.pts}</b></td><td><button onclick="if(confirm('Delete?'))delStat(${e.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="4" class="mu">No matches yet.</td></tr>`}</table></div>
+   <div class="card"><b>Add a player</b><div class="grid" style="margin-top:8px"><label>Name<input id="n_name" maxlength="40"></label>
+   <label>Position<select id="n_pos"><option>GK</option><option>DEF</option><option>MID</option><option>FWD</option></select></label>
+   <label>Ratings (comma separated)<input id="n_rat" placeholder="7, 8, 6.5, 7, 9"></label><label>Price (optional)<input id="n_price" type="number" step="0.1" placeholder="auto"></label></div>
+   <div class="mu" style="margin-top:6px">Auto price scales the average rating from 5 to 15, same as the spreadsheet.</div><div style="margin-top:10px"><button class="on" onclick="addPlayer()">Add player</button></div></div>
+   <div class="card scroll"><b>Edit prices</b><div class="mu">Changing a price affects budget checks for future saves only.</div><table><tr><th>Player</th><th>Price</th><th>Active</th><th></th></tr>
+   ${d.players.map(p=>`<tr><td>${esc(p.name)} <span class="mu">${p.pos}</span></td><td><input id="pr_${p.id}" type="number" step="0.1" value="${p.price}" style="width:80px"></td><td><input type="checkbox" id="ac_${p.id}" ${p.active?"checked":""}></td><td><button onclick="editPlayer(${p.id})">Save</button></td></tr>`).join("")}</table></div>`}
+const setOpen=o=>run(async()=>{await api("setOpen",{open:o});await load(false)});
+const nextRound=()=>run(async()=>{await api("nextRound");ST.draft=null;await load()});
+const addStat=()=>run(async()=>{const b={round:$("#s_round").value,player:$("#s_player").value};Object.keys(SL).forEach(k=>b[k]=$("#s_"+k).value);await api("addStat",b);await load(false);toast("Stats saved")});
+const delStat=id=>run(async()=>{await api("deleteStat",{id});await load(false)});
+const addPlayer=()=>run(async()=>{await api("addPlayer",{name:$("#n_name").value,pos:$("#n_pos").value,ratings:$("#n_rat").value,price:$("#n_price").value});await load(false);toast("Player added")});
+const editPlayer=id=>run(async()=>{await api("editPlayer",{id,price:$("#pr_"+id).value,active:$("#ac_"+id).checked});await load(false);toast("Saved")});
+
+function render(){
+  if(!ST.sess||!ST.d){$("#nav").innerHTML="";$("#v").innerHTML=welcome();return}
+  const d=ST.d,T={sq:"My squad",lb:"Leaderboard",pl:"Players"};if(d.me.owner)T.ad="Admin";
+  if(!T[ST.tab])ST.tab="sq";
+  $("#ttl").textContent=d.league.name;$("#sub").textContent=`${d.me.name}${d.me.owner?" (owner)":""} · budget ${d.league.budget} · `;
+  $("#sub").insertAdjacentHTML("beforeend",`<a href="#" onclick="if(confirm('Sign out on this device?'))logout();return false">sign out</a>`);
+  $("#nav").innerHTML=Object.keys(T).map(k=>`<button class="${ST.tab===k?"on":""}" onclick="ST.tab='${k}';render()">${T[k]}</button>`).join("");
+  $("#v").innerHTML=({sq:squadV,lb:board,pl:playersV,ad:adminV})[ST.tab]()}
+render();
+if(ST.sess)load().catch(e=>{toast(e.message)});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&ST.sess&&ST.d&&!ST.busy)load(false).catch(()=>{})});
+</script></body></html>
