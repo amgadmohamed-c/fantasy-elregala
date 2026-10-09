@@ -166,6 +166,13 @@ details.more[open] summary::after{transform:rotate(45deg)}
 .rank .brk{font-size:12px;color:var(--mu);text-align:right;margin-top:4px}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}.court .chalk{stroke-dashoffset:0}}
+/* player portraits */
+.profile-thumb{display:block;width:32px;height:32px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.7);background:var(--tint)}
+.slot .shirt.has-photo{background:transparent;border:2px solid rgba(255,255,255,.8);overflow:hidden;padding:0}
+.slot .shirt.has-photo img{width:100%;height:100%;object-fit:cover;display:block;border-radius:50%}
+.pc .avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--line);background:var(--tint);flex:none}
+.admin-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid var(--line);background:var(--tint);display:block}
+@media (prefers-color-scheme:dark){.profile-thumb,.pc .avatar,.admin-avatar{border-color:rgba(255,255,255,.18)}}
 </style></head><body>
 <div id="progress"></div>
 <div id="app"></div><nav id="nav" aria-label="Sections"></nav><div id="toast" role="status" aria-live="polite"></div>
@@ -186,7 +193,8 @@ async function api(action,body={}){
   if(!r.ok){if(r.status===401&&ST.sess)logout(true);throw new Error(j.error||"Something went wrong. Try again.")}
   return j}
 async function run(fn){if(ST.busy)return;ST.busy=true;document.body.dataset.busy="1";try{await fn()}catch(e){toast(e.message,"err")}finally{ST.busy=false;delete document.body.dataset.busy}}
-function logout(silent){try{localStorage.removeItem(LS)}catch(e){}ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false,screen:"signin",leagues:null,loadErr:""};A.pin="";render()}
+function logout(silent){try{localStorage.removeItem(LS)}catch(e){}ST={sess:null,d:null,tab:"sq",round:"all",draft:null,busy:false,screen:"signin",leagues:null,loadErr:""};A.pin="";JC=""}
+
 async function load(resetDraft=true){
   ST.d=await api("state");ST.loadErr="";const d=ST.d;
   if(resetDraft||!ST.draft)ST.draft=Object.assign({gk:"",def:"",m1:"",m2:"",fwd:"",cap:""},d.mine||{});
@@ -271,7 +279,7 @@ function clearSlot(key){const id=ST.draft[key];ST.draft[key]="";if(id&&ST.draft.
 function pitchSlot(key){
   const id=ST.draft[key],player=P(id),captain=id&&id==ST.draft.cap;
   return `<button type="button" class="slot ${player?"filled":""}" ${player?`onclick="clearSlot('${key}')" aria-label="Remove ${esc(player.name)}"`:`aria-label="Empty ${slotLabel[key]} slot" tabindex="-1"`}>
-    <span class="shirt">${player?esc(initials(player.name)):"+"}</span>
+    <span class="shirt ${player && player.image ? 'has-photo' : ''}">${player ? (player.image ? `<img src="${esc(player.image)}" alt="${esc(player.name)}" onerror="this.style.display='none';this.parentElement.classList.add('fallback')">` : esc(initials(player.name))) : '+'}</span>
     <span class="tag">${player?esc(player.name):slotLabel[key]}</span>
     ${player?`<span class="price">${player.price}</span>`:""}${captain?'<span class="cap" title="Captain">C</span>':""}</button>`}
 function selectPlayer(playerId){
@@ -290,7 +298,8 @@ function bankCards(pos){
   const list=ST.d.players.filter(p=>p.pos===pos&&(p.active||ids(ST.draft).includes(p.id)));
   return list.map(p=>{const sel=ids(ST.draft).includes(p.id);
     return `<button type="button" class="pc ${sel?"selected":""}" onclick="selectPlayer(${p.id})" aria-pressed="${sel}">
-      <span><span class="nm">${esc(p.name)}</span><div class="st">${sel?"In your squad":"&nbsp;"}</div></span><span class="pr">${p.price}</span></button>`}).join("")||`<div class="empty-bank">No ${pos.toLowerCase()} players available.</div>`}
+      <span style="display:flex;align-items:center;gap:10px;min-width:0"><img class="avatar" src="${esc(p.image||'')}" alt="${esc(p.name)}" onerror="this.style.display='none';this.alt='';" ${p.image?'':'style="display:none"'}><span style="min-width:0"><span class="nm">${esc(p.name)}</span><div class="st">${sel?"In your squad":"&nbsp;"}</div></span></span>
+      <span class="pr">${p.price}</span></button>`}).join("")||`<div class="empty-bank">No ${pos.toLowerCase()} players available.</div>`}
 
 /* ---------- tabs ---------- */
 function squadV(){
@@ -337,7 +346,7 @@ function shareText(){const d=ST.d;const rows=[...d.standings].map(m=>{let t=0;fo
 function playersV(){
   const d=ST.d,tot={};d.stats.forEach(e=>tot[e.player_id]=(tot[e.player_id]||0)+e.pts);
   return `<div class="card scroll"><h2>Players and prices</h2><table><tr><th>Player</th><th>Pos</th><th>Avg</th><th>Price</th><th>Pts</th></tr>
-   ${d.players.filter(p=>p.active).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.pos}</td><td>${p.avg}</td><td><b>${p.price}</b></td><td>${tot[p.id]||0}</td></tr>`).join("")}</table></div>
+   ${d.players.filter(p=>p.active).map(p=>`<tr><td><div style="display:flex;align-items:center;gap:10px"><img class="profile-thumb" src="${esc(p.image||'')}" alt="${esc(p.name)}" ${p.image?'':'style="display:none"'} onerror="this.style.display='none'" /><b>${esc(p.name)}</b></div></td><td>${p.pos}</td><td>${p.avg}</td><td><b>${p.price}</b></td><td>${tot[p.id]||0}</td></tr>`).join("")}</table></div>
    <div class="card"><h2>Scoring</h2><table>${Object.entries(d.scoring).map(([k,v])=>`<tr><td>${SL[k]}</td><td><b>${v>0?"+":""}${v}</b></td></tr>`).join("")}</table>
    <p class="mu" style="margin:12px 0 0">Squad: 1 GK, 1 DEF, 2 MID, 1 FWD. Captain ×${d.league.capMult}. 1 free transfer per round, then -${d.league.penalty} pts each.</p></div>`}
 const SL={played:"Played",goals:"Goal",assists:"Assist",cs:"Clean sheet (GK, DEF)",ps:"Penalty save",pm:"Penalty miss",yc:"Yellow card",rc:"Red card",og:"Own goal",win:"Team win",motm:"Man of the match"};
@@ -352,19 +361,19 @@ function adminV(){
    <div class="card"><h2>Add match stats</h2><div class="grid" style="margin-top:14px"><label>Round<input id="s_round" type="number" min="1" max="${L.round}" value="${L.round}"></label>
    <label>Player<select id="s_player">${opts(d.players.filter(p=>p.active).map(p=>({id:p.id,name:p.name})),"","Select")}</select></label>${f}</div>
    <div style="margin-top:16px"><button class="on" onclick="addStat()">Save stats</button></div><p class="mu" style="margin:10px 0 0">Saving again for the same player and round replaces it.</p></div>
-   <div class="card scroll"><h2>Recent stats</h2><table><tr><th>Rd</th><th>Player</th><th>Pts</th><th></th></tr>${[...d.stats].reverse().slice(0,30).map(e=>`<tr><td>${e.round}</td><td>${esc(P(e.player_id)?.name)}</td><td><b>${e.pts}</b></td><td><button class="small" onclick="if(confirm('Delete?'))delStat(${e.id})">Delete</button></td></tr>`).join("")||`<tr><td colspan="4" class="mu">No matches yet.</td></tr>`}</table></div>
    <div class="card"><h2>Add a player</h2><div class="grid" style="margin-top:14px"><label>Name<input id="n_name" maxlength="40"></label>
    <label>Position<select id="n_pos"><option>GK</option><option>DEF</option><option>MID</option><option>FWD</option></select></label>
-   <label>Ratings (comma separated)<input id="n_rat" placeholder="7, 8, 6.5, 7, 9"></label><label>Price (optional)<input id="n_price" type="number" step="0.1" placeholder="auto"></label></div>
+   <label>Ratings (comma separated)<input id="n_rat" placeholder="7, 8, 6.5, 7, 9"></label><label>Price (optional)<input id="n_price" type="number" step="0.1" placeholder="auto"></label>
+   <label>Profile image URL (optional)<input id="n_img" type="url" placeholder="https://...jpg"></label></div>
    <p class="mu" style="margin:10px 0 0">Auto price scales the average rating from 5 to 15, same as the spreadsheet.</p><div style="margin-top:14px"><button class="on" onclick="addPlayer()">Add player</button></div></div>
-   <div class="card scroll"><h2>Edit prices</h2><p class="mu" style="margin:0 0 6px">Changing a price affects budget checks for future saves only.</p><table><tr><th>Player</th><th>Price</th><th>Active</th><th></th></tr>
-   ${d.players.map(p=>`<tr><td>${esc(p.name)} <span class="mu">${p.pos}</span></td><td><input id="pr_${p.id}" type="number" step="0.1" value="${p.price}" style="width:90px"></td><td><input type="checkbox" id="ac_${p.id}" ${p.active?"checked":""}></td><td><button class="small" onclick="editPlayer(${p.id})">Save</button></td></tr>`).join("")}</table></div>`}
+   <div class="card scroll"><h2>Edit prices</h2><p class="mu" style="margin:0 0 6px">Changing a price affects budget checks for future saves only.</p><table><tr><th>Player</th><th>Price</th><th>Active</th><th>Image</th><th></th></tr>
+   ${d.players.map(p=>`<tr><td><div style="display:flex;align-items:center;gap:10px"><img class="admin-avatar" src="${esc(p.image||'')}" alt="${esc(p.name)}" ${p.image?'':'style="display:none"'} onerror="this.style.display='none'" /><div><div>${esc(p.name)}</div><div class="mu">${p.pos}</div></div></div></td><td><input id="pr_${p.id}" type="number" step="0.1" value="${p.price}" style="width:90px"></td><td><input type="checkbox" id="ac_${p.id}" ${p.active?"checked":""}></td><td><input id="img_${p.id}" type="url" value="${esc(p.image||"")}" style="width:180px" placeholder="https://..."></td><td><button class="small" onclick="editPlayer(${p.id})">Save</button></td></tr>`).join("")}</table></div>`}
 const setOpen=o=>run(async()=>{await api("setOpen",{open:o});await load(false)});
 const nextRound=()=>run(async()=>{await api("nextRound");ST.draft=null;await load()});
 const addStat=()=>run(async()=>{const b={round:$("#s_round").value,player:$("#s_player").value};Object.keys(SL).forEach(k=>b[k]=$("#s_"+k).value);await api("addStat",b);await load(false);toast("Stats saved")});
 const delStat=id=>run(async()=>{await api("deleteStat",{id});await load(false)});
-const addPlayer=()=>run(async()=>{await api("addPlayer",{name:$("#n_name").value,pos:$("#n_pos").value,ratings:$("#n_rat").value,price:$("#n_price").value});await load(false);toast("Player added")});
-const editPlayer=id=>run(async()=>{await api("editPlayer",{id,price:$("#pr_"+id).value,active:$("#ac_"+id).checked});await load(false);toast("Saved")});
+const addPlayer=()=>run(async()=>{await api("addPlayer",{name:$("#n_name").value,pos:$("#n_pos").value,ratings:$("#n_rat").value,price:$("#n_price").value,image:$("#n_img").value});await load(false);toast("Player added")});
+const editPlayer=id=>run(async()=>{await api("editPlayer",{id,price:$("#pr_"+id).value,active:$("#ac_"+id).checked,image:$("#img_"+id).value});await load(false);toast("Saved")});
 
 /* ---------- render ---------- */
 let viewKey="";

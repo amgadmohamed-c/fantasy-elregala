@@ -25,7 +25,8 @@ const ensure = () => ready ??= sql.transaction([
     unique(league_id, name))`,
   sql`create table if not exists players(id serial primary key, league_id int not null references leagues(id) on delete cascade,
     name text not null, pos text not null check (pos in ('GK','DEF','MID','FWD')), ratings text not null default '',
-    avg real not null, price real not null, active boolean not null default true, unique(league_id, name))`,
+    avg real not null, price real not null, active boolean not null default true, image text not null default '', unique(league_id, name))`,
+  sql`alter table players add column if not exists image text not null default ''`,
   sql`create table if not exists squads(member_id int not null references members(id) on delete cascade, round int not null,
     gk int not null, def int not null, m1 int not null, m2 int not null, fwd int not null, cap int not null,
     primary key(member_id, round))`,
@@ -39,6 +40,13 @@ const ensure = () => ready ??= sql.transaction([
 const hash = (pin, salt = crypto.randomBytes(8).toString('hex')) => salt + ':' + crypto.scryptSync(pin, salt, 32).toString('hex');
 const checkPin = (pin, stored) => { const [salt, h] = stored.split(':'); const x = hash(pin, salt).split(':')[1]; return crypto.timingSafeEqual(Buffer.from(x), Buffer.from(h)); };
 const clean = (s, max = 40) => String(s ?? '').trim().replace(/\s+/g, ' ').slice(0, max);
+const cleanUrl = v => {
+  const s = String(v ?? '').trim();
+  if (!s) return '';
+  if (/^https?:\/\//i.test(s)) return s.slice(0, 500);
+  if (s.startsWith('data:image/')) return s.slice(0, 200000);
+  return '';
+};
 const needPin = p => { p = String(p ?? ''); if (!/^\d{4,8}$/.test(p)) throw new E('PIN must be 4 to 8 digits'); return p; };
 const newCode = () => Array.from(crypto.randomBytes(6), b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('');
 const int = (v, lo, hi) => Math.min(hi, Math.max(lo, Math.trunc(+v) || 0));
@@ -51,7 +59,7 @@ async function auth(b, owner = false) {
   return { m, L };
 }
 
-const playerRows = (id) => sql`select id,name,pos,ratings,avg,price,active from players where league_id=${id} order by pos, name`;
+const playerRows = (id) => sql`select id,name,pos,ratings,avg,price,active,image from players where league_id=${id} order by pos, name`;
 
 const A = {
   async createLeague(b) {
@@ -65,9 +73,10 @@ const A = {
     try {
       await sql.transaction([
         sql`insert into members(league_id,name,pin,token,owner) values(${L.id},${me},${hash(pin)},${token},true)`,
-        sql`insert into players(league_id,name,pos,ratings,avg,price)
-            select ${L.id}, n, p, r, a, pr from unnest(${RAW.map(r => r[0])}::text[], ${RAW.map(r => r[1])}::text[],
-            ${RAW.map(r => r[2].join(','))}::text[], ${AV}::real[], ${AV.map(priceOf)}::real[]) as t(n,p,r,a,pr)`,
+        sql`insert into players(league_id,name,pos,ratings,avg,price,image)
+            select ${L.id}, n, p, r, a, pr, im from unnest(${RAW.map(r => r[0])}::text[], ${RAW.map(r => r[1])}::text[],
+            ${RAW.map(r => r[2].join(','))}::text[], ${AV}::real[], ${AV.map(priceOf)}::real[], ${Array(RAW.length).fill('')}::text[]) as t(n,p,r,a,pr,im)`,
+
       ]);
     } catch (e) { await sql`delete from leagues where id=${L.id}`; throw e; }
     return { token, code: L.code };
@@ -164,12 +173,13 @@ const A = {
     const { L } = await auth(b, true);
     const name = clean(b.name), pos = String(b.pos);
     const rs = String(b.ratings ?? '').split(/[,\s]+/).filter(Boolean).map(Number);
+    const image = cleanUrl(b.image);
     if (!name || !['GK', 'DEF', 'MID', 'FWD'].includes(pos)) throw new E('Enter a name and position');
     if (!rs.length || rs.some(x => !(x >= 0 && x <= 10))) throw new E('Ratings: numbers 0-10 separated by commas');
     const avg = +mean(rs).toFixed(2);
     const price = b.price !== '' && b.price != null ? Math.round(+b.price * 10) / 10 : priceOf(avg);
     if (!(price > 0 && price <= 50)) throw new E('Invalid price');
-    try { await sql`insert into players(league_id,name,pos,ratings,avg,price) values(${L.id},${name},${pos},${rs.join(',')},${avg},${price})`; }
+    try { await sql`insert into players(league_id,name,pos,ratings,avg,price,image) values(${L.id},${name},${pos},${rs.join(',')},${avg},${price},${image})`; }
     catch (e) { if (/unique/i.test(e.message)) throw new E('A player with that name already exists'); throw e; }
     return { ok: true };
   },
@@ -178,7 +188,8 @@ const A = {
     const { L } = await auth(b, true);
     const price = Math.round(+b.price * 10) / 10;
     if (!(price > 0 && price <= 50)) throw new E('Invalid price');
-    await sql`update players set price=${price}, active=${b.active !== false} where id=${+b.id} and league_id=${L.id}`;
+    const image = cleanUrl(b.image);
+    await sql`update players set price=${price}, active=${b.active !== false}, image=${image} where id=${+b.id} and league_id=${L.id}`;
     return { ok: true };
   },
 
