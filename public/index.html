@@ -19,6 +19,36 @@ table{border-collapse:collapse;width:100%}th,td{padding:8px 6px;text-align:left;
 .mu{color:var(--mu);font-size:13px}.ok{color:var(--ac);font-weight:600}.bad{color:var(--bad);font-weight:600}
 .row{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 #toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:#222;color:#fff;padding:10px 16px;border-radius:10px;display:none;z-index:9;max-width:90%}
+
+.pitch-wrap{margin:10px 0 14px}
+.pitch{position:relative;display:grid;grid-template-columns:repeat(2,minmax(140px,1fr));gap:10px;align-items:stretch;background:linear-gradient(180deg,#127a4c,#0d5d3a 60%,#0b4a2e);border:2px solid rgba(255,255,255,.2);border-radius:18px;padding:16px;min-height:360px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.08)}
+.pitch::before,.pitch::after{content:"";position:absolute;inset:14px;border:2px solid rgba(255,255,255,.3);border-radius:16px;pointer-events:none}
+.pitch::after{inset:14px 50% 14px 50%;width:0;border-left:2px solid rgba(255,255,255,.3);border-right:0;border-top:0;border-bottom:0}
+.pitch-lines{position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at center,transparent 0 56%,rgba(255,255,255,.18) 56% 57%,transparent 58%);opacity:.8}
+.slot{position:relative;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-height:82px;border:1px solid rgba(255,255,255,.25);border-radius:14px;background:rgba(14,33,22,.2);color:#fff;padding:10px 8px;backdrop-filter:blur(2px);text-align:center;transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease}
+.slot:hover{transform:translateY(-1px);box-shadow:0 6px 14px rgba(0,0,0,.18)}
+.slot.filled{background:rgba(245,250,255,.12);border-color:rgba(255,255,255,.4)}
+.slot-label{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.8);font-weight:700}
+.slot-name{font-size:15px;font-weight:700;line-height:1.2;max-width:100%}
+.slot-meta{font-size:11px;color:rgba(255,255,255,.8)}
+.slot-empty{font-size:13px;color:rgba(255,255,255,.8)}
+.captain-badge{position:absolute;top:8px;right:8px;border-radius:50%;background:#f6c453;color:#1d1d1d;width:20px;height:20px;display:grid;place-items:center;font-size:11px;font-weight:800}
+.caption-row{display:flex;align-items:end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:8px}
+.captain-picker{min-width:180px}
+.mini-summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-top:12px}
+.mini-summary .row{border:1px solid var(--bd);border-radius:10px;padding:8px 10px;background:rgba(0,0,0,.02)}
+.player-bank-wrap{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px}
+.player-bank-section{display:flex;flex-direction:column;gap:8px}
+.bank-title{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);font-weight:700;padding-left:2px}
+.player-bank{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px}
+.player-card{display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:10px;min-height:76px;text-align:left;transition:border-color .15s ease, transform .15s ease, box-shadow .15s ease}
+.player-card:hover{border-color:var(--ac);transform:translateY(-1px)}
+.player-card.selected{border-color:var(--ac);background:rgba(31,111,67,.08)}
+.player-name{font-weight:700;line-height:1.2}
+.player-meta{font-size:12px;color:var(--mu)}
+.player-badge{margin-top:auto;font-size:11px;padding:4px 7px;border-radius:999px;background:rgba(31,111,67,.12);color:var(--ac);font-weight:700}
+.empty-bank{font-size:12px;color:var(--mu);padding:10px;border:1px dashed var(--bd);border-radius:10px}
+@media (max-width:620px){.pitch{grid-template-columns:1fr;min-height:auto}.pitch::after{inset:50% 14px 14px 14px;border-top:2px solid rgba(255,255,255,.3);border-left:0;border-right:0;border-bottom:0}.pitch::before{inset:14px}} 
 </style></head><body>
 <header><h1 id="ttl">MSA Fantasy Football</h1><div class="mu" id="sub">5-player squads · budget 50</div></header>
 <nav id="nav"></nav><main id="v"></main><div id="toast"></div>
@@ -67,19 +97,67 @@ const inviteUrl=()=>location.origin+"/?join="+ST.d.league.code;
 const inviteText=()=>`Join my fantasy football league "${ST.d.league.name}" on MSA! Open ${inviteUrl()} (league code: ${ST.d.league.code})`;
 const wa=t=>"https://wa.me/?text="+encodeURIComponent(t);
 const opts=(list,sel,ph)=>`<option value="">${ph||"Select"}</option>`+list.map(p=>`<option value="${p.id}" ${p.id==sel?"selected":""}>${esc(p.name)}${p.price!=null?" ("+p.price+")":""}</option>`).join("");
+const roleSlots={GK:["gk"],DEF:["def"],MID:["m1","m2"],FWD:["fwd"]};
+const slotLabel={gk:"GK",def:"DEF",m1:"MID 1",m2:"MID 2",fwd:"FWD"};
+const roleOrder=["GK","DEF","MID","FWD"];
+const allSlotKeys=["gk","def","m1","m2","fwd"];
+function pitchSlot(key){
+  const id=ST.draft[key];
+  const player=P(id);
+  const captain=id&&id==ST.draft.cap;
+  return `<button type="button" class="slot ${player?"filled":""}" onclick="if(${!!player}){ST.draft.${key}='';if(ST.draft.cap==${id||0})ST.draft.cap='';render();}return false;">
+    <span class="slot-label">${slotLabel[key]}</span>
+    ${player?`<span class="slot-name">${esc(player.name)}</span><span class="slot-meta">${player.pos} · ${player.price}</span>${captain?'<span class="captain-badge">C</span>':''}`:`<span class="slot-empty">Pick ${slotLabel[key]}</span>`}
+  </button>`
+}
+function selectPlayer(playerId){
+  const player=P(playerId); if(!player) return;
+  const keys=roleSlots[player.pos]||[];
+  const existing=keys.find(k=>String(ST.draft[k])===String(playerId));
+  if(existing){ ST.draft[existing]=""; if(ST.draft.cap==playerId) ST.draft.cap=""; fixCap(); render(); return; }
+  const target=keys.find(k=>!ST.draft[k]);
+  const replaceKey=target||keys[0];
+  const oldId=ST.draft[replaceKey];
+  ST.draft[replaceKey]=playerId;
+  if(oldId && ST.draft.cap==oldId) ST.draft.cap=playerId;
+  if(!ST.draft.cap) ST.draft.cap=playerId;
+  fixCap(); render();
+}
+function bankCards(pos){
+  const list=ST.d.players.filter(p=>p.pos===pos && (p.active || ids(ST.draft).includes(p.id)));
+  return list.map(p=>{
+    const sel=ids(ST.draft).includes(p.id);
+    return `<button type="button" class="player-card ${sel?"selected":""}" onclick="selectPlayer(${p.id})">
+      <span class="player-name">${esc(p.name)}</span>
+      <span class="player-meta">${p.pos} · ${p.price}</span>
+      <span class="player-badge">${sel?"Selected":"Pick"}</span>
+    </button>`;
+  }).join("")||`<div class="empty-bank">No ${pos.toLowerCase()} players available.</div>`;
+}
 
 /* ---------- tabs ---------- */
 function squadV(){
   const d=ST.d,L=d.league,q=ST.draft,s=status(q),ok=s==="OK";
   const prev=d.prev;let tr=0;if(prev&&ids(q).every(Boolean))tr=ids(q).filter(i=>!ids(prev).includes(i)).length;
   const pen=Math.max(0,tr-L.freeTr)*L.penalty;
-  const slots=[["gk","GK","GK"],["def","DEF","DEF"],["m1","MID","MID 1"],["m2","MID","MID 2"],["fwd","FWD","FWD"]];
-  return `<div class="card"><div class="row"><b>Round ${L.round} · ${L.open?'<span class="ok">squads open</span>':'<span class="bad">squads locked</span>'}</b>
-   <span class="mu">Cost ${cost(q)} / ${L.budget} · <span class="${ok?"ok":"bad"}">${s}</span></span></div>
-   <div class="grid" style="margin-top:8px">${slots.map(([k,pos,l])=>`<label>${l}<select ${L.open?"":"disabled"} onchange="ST.draft.${k}=this.value;fixCap();render()">${opts(d.players.filter(p=>p.pos===pos&&(p.active||p.id==q[k])),q[k])}</select></label>`).join("")}
-   <label>Captain (×${L.capMult})<select ${L.open?"":"disabled"} onchange="ST.draft.cap=this.value;render()">${opts(ids(q).filter(Boolean).map(P).filter(Boolean),q.cap)}</select></label></div>
-   ${prev?`<div class="mu" style="margin-top:8px">Transfers this round: ${tr} (${L.freeTr} free, then -${L.penalty} pts each)${pen?` · <span class="bad">penalty -${pen}</span>`:""}</div>`:""}
-   <div style="margin-top:10px"><button class="on" ${ok&&L.open?"":"disabled"} onclick="saveSquad()">Save squad</button></div></div>`}
+  const pitch = `<div class="pitch-wrap"><div class="pitch"><div class="pitch-lines"></div>${allSlotKeys.map(k=>pitchSlot(k)).join("")}</div></div>`;
+  const teamSummary = `<div class="card mini-summary"><div class="row"><span>Cost</span><b>${cost(q)} / ${L.budget}</b></div><div class="row"><span>Status</span><b class="${ok?"ok":"bad"}">${s}</b></div>${prev?`<div class="row"><span>Transfers</span><b>${tr} (${pen?`-`+pen:`0`})</b></div>`:""}</div>`;
+
+  return `<div class="card"><div class="row" style="margin-bottom:12px"><b>Round ${L.round} · ${L.open?'<span class="ok">squads open</span>':'<span class="bad">squads locked</span>'}</b>
+   <span class="mu">Captain ×${L.capMult}</span></div>
+   ${pitch}
+   <div class="caption-row">
+     <div class="mu">Select players from the list below. Tap a selected player to remove them.</div>
+     <div class="captain-picker">
+       <label>Captain<select ${L.open?"":"disabled"} onchange="ST.draft.cap=this.value||'';render()">${opts(ids(q).filter(Boolean).map(P).filter(Boolean),q.cap,"Select captain")}</select></label>
+     </div>
+   </div>
+   ${teamSummary}
+   <div style="margin-top:12px"><button class="on" ${ok&&L.open?"":"disabled"} onclick="saveSquad()">Save squad</button></div></div>
+   <div class="card">
+     <div class="row" style="margin-bottom:10px"><b>Player pool</b><span class="mu">Choose your squad</span></div>
+     <div class="player-bank-wrap">${roleOrder.map(pos=>`<div class="player-bank-section"><div class="bank-title">${pos}</div><div class="player-bank">${bankCards(pos)}</div></div>`).join("")}</div>
+   </div>`}
 const fixCap=()=>{if(!ids(ST.draft).includes(+ST.draft.cap))ST.draft.cap=""};
 const saveSquad=()=>run(async()=>{await api("saveSquad",ST.draft);await load();toast("Squad saved")});
 
